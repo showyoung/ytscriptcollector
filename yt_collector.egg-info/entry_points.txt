@@ -1,0 +1,4 @@
+[console_scripts]
+ytdl-cli   = cli:main
+ytdl-aicli = aicrobot:main
+ytdl-webui = web_ui:run_server

@@ -1,0 +1,17 @@
+README.md
+requirements.txt
+config.yaml
+config.py
+install.sh
+cli.py
+aicrobot.py
+collector.py
+web_ui.py
+utils.py
+__init__.py
+yt_collector.egg-info/PKG-INFO
+yt_collector.egg-info/SOURCES.txt
+yt_collector.egg-info/dependency_links.txt
+yt_collector.egg-info/entry_points.txt
+yt_collector.egg-info/requires.txt
+yt_collector.egg-info/top_level.txt

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTube 脚本采集器</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style-light.css" id="theme-light" disabled>
+</head>
+<body>
+<div class="container">
+  <h1>📺 YouTube 视频采集器脚本</h1>
+  <div class="theme-bar">
+    <input type="checkbox" id="follow_system" checked onchange="onFollowSystemChange()">
+    <label for="follow_system">跟随系统</label>
+    <span class="sep">|</span>
+    <input type="checkbox" id="dark_mode" onchange="onDarkModeChange()" disabled>
+    <label for="dark_mode">深色模式</label>
+  </div>
+  <p class="subtitle">填写以下选项，开始采集</p>
+
+  <div class="card">
+    <h2>新建任务</h2>
+    <div class="form-group">
+      <label>YouTube 链接</label>
+      <div class="input-row">
+        <input type="text" id="url" class="flex-1" placeholder="https://www.youtube.com/watch?v=..." onblur="onUrlBlur()" oninput="onUrlInput()" />
+        <button class="btn btn-secondary" onclick="previewVideo()" id="previewBtn">🔍 预览</button>
+      </div>
+      <p id="videoInfo" class="info hidden"></p>
+    </div>
+    <div class="form-group">
+      <label>请选择视频语言</label>
+      <div class="input-row">
+        <select id="whisper_language" class="flex-1">
+          <option value="">加载中...</option>
+        </select>
+        <input type="text" id="whisper_language_custom" class="flex-1 hidden" placeholder="ISO 639-1 代码，如: zh, en, ja" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>采集类型</label>
+      <select id="media_type">
+        <option value="">加载中...</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>视频画质 <span id="qualityNote" class="quality-note">(输入链接后点击预览)</span></label>
+      <select id="quality" disabled>
+        <option value="">-- 先预览视频 --</option>
+      </select>
+    </div>
+    <div class="form-group toggle">
+      <input type="checkbox" id="code_convert" />
+      <label for="code_convert">是否转码</label>
+    </div>
+    <div class="form-group toggle">
+      <input type="checkbox" id="srt" checked />
+      <label for="srt">生成字幕 (.srt)</label>
+    </div>
+    <div class="form-group toggle">
+      <input type="checkbox" id="md" checked />
+      <label for="md">生成文本 (.md)</label>
+    </div>
+    <div class="form-group">
+      <label>Whisper 模型（听写质量由低到高排序）</label>
+      <select id="whisper_model">
+        <option value="">加载中...</option>
+      </select>
+    </div>
+    <div class="form-group toggle">
+      <input type="checkbox" id="separate_audio" />
+      <label for="separate_audio">是否生成单独的音频文件</label>
+    </div>
+    <div class="form-group">
+      <label>音频格式</label>
+      <select id="audio_format">
+        <option value="">加载中...</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Cookie 来源浏览器</label>
+      <select id="cookies">
+        <option value="">加载中...</option>
+      </select>
+      <p class="info">自动检测会尝试从浏览器读取 YouTube 登录状态</p>
+    </div>
+    <div class="form-group">
+      <label>输出目录</label>
+      <input type="text" id="output_dir" class="flex-1" placeholder="默认: 软件目录/downloads" />
+    </div>
+
+    <button class="btn btn-primary" id="startBtn" onclick="startCollect()">▶ 开始采集</button>
+    <div class="progress" id="progress">
+      <div class="status" id="statusText">准备中...</div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+    <div class="result" id="result"></div>
+  </div>
+
+  <div class="msgbox-overlay" id="msgboxOverlay">
+    <div class="msgbox">
+      <div class="msgbox-title" id="msgboxTitle"></div>
+      <div class="msgbox-body" id="msgboxBody"></div>
+      <div class="msgbox-btns">
+        <button class="btn btn-secondary" onclick="_msgboxClose()">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">ytdl-cli | Python + yt-dlp + Whisper</div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

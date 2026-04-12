@@ -1,0 +1,12 @@
+# Core (必需)
+yt-dlp>=2024.1.1
+pyyaml>=6.0
+openai-whisper>=20231117
+
+# System requirement (需单独安装，不能用 pip):
+#   Linux:   apt install ffmpeg
+#   macOS:   brew install ffmpeg
+#   Windows: winget install ffmpeg
+#
+# Node.js (必需，yt-dlp JS challenge solver):
+#   https://nodejs.org

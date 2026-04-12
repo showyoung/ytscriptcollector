@@ -1,0 +1,6 @@
+collector
+cli
+aicrobot
+web_ui
+utils
+config
