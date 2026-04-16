@@ -2,7 +2,16 @@
 """
 YouTube 频道文字脚本采集器
 """
-from collector import collect, get_video_info, get_available_formats
+
+from collector import (
+    collect,
+    get_video_info,
+    get_available_formats,
+    download_video,
+    download_youtube_subtitles,
+    extract_audio,
+    transcribe,
+)
 from utils import detect_youtube_browser
 from config import (
     quality_map,
@@ -17,10 +26,17 @@ from config import (
 )
 
 __all__ = [
+    # 核心采集
     "collect",
     "get_video_info",
     "get_available_formats",
+    "download_video",
+    "download_youtube_subtitles",
+    "extract_audio",
+    "transcribe",
+    # 工具
     "detect_youtube_browser",
+    # 配置
     "quality_map",
     "qualities",
     "whisper_models",

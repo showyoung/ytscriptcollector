@@ -104,8 +104,10 @@ def find_executable(name: str, extra_paths: list[str] | None = None) -> str:
         if c.exists():
             return str(c)
 
-    # 最后 fallback：让 shutil.which() 查找 PATH
-    return name
+    # 最后 fallback：用 shutil.which() 查找 PATH
+    import shutil as _shutil
+    found = _shutil.which(name)
+    return found if found else name
 
 
 def get_ffmpeg() -> str:

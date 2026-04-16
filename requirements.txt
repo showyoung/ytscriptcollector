@@ -1,12 +1,11 @@
-# Core (必需)
+# Core
 yt-dlp>=2024.1.1
+yt-dlp-ejs>=0.8.0
 pyyaml>=6.0
-openai-whisper>=20231117
 
-# System requirement (需单独安装，不能用 pip):
-#   Linux:   apt install ffmpeg
-#   macOS:   brew install ffmpeg
-#   Windows: winget install ffmpeg
-#
-# Node.js (必需，yt-dlp JS challenge solver):
-#   https://nodejs.org
+# Whisper 语音识别 + torch 推理
+# 版本约束避免 macOS 老系统源码编译 llvmlite
+torch<2.3.0
+llvmlite<0.44.0
+numba<0.60.0
+openai-whisper>=20231117

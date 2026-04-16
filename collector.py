@@ -44,7 +44,7 @@ def _build_ydl_opts(url: str, *, cookies_method: str) -> tuple[dict, str]:
         "extract_flat": False,
         "cookiesfrombrowser": (cookies_method, None),
         "js_runtimes": {"node": {"path": js_runtime}},
-        "extractor_args": {"youtube": {"js_runtime": "node"}},
+        "extractor_args": {"youtube": {"js_runtime": "node"}}
     }, js_runtime
 
 
