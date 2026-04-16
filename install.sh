@@ -229,41 +229,64 @@ check_ffmpeg() {
   return 1
 }
 
-download_ffmpeg_pkg() {
-  local name="$1"
+install_ffmpeg_static() {
+  # 一次性下载、解压、提取 ffmpeg + ffprobe（johnvansickle 静态包同时包含两者）
+  local tarball="${FFMPEG_DIR}/ffmpeg-static.tar.xz"
+  local tmp_extract="${FFMPEG_DIR}/.tmp_extract"
 
-  check_ffmpeg "${name}" && return 0
+  # 已安装则跳过
+  if [[ -x "${FFMPEG_DIR}/bin/ffmpeg" && -x "${FFMPEG_DIR}/bin/ffprobe" ]]; then
+    info "ffmpeg + ffprobe 已安装"
+    return 0
+  fi
 
   case "$(uname -s)" in
     Darwin)
-      local url="https://evermeet.cx/ffmpeg/getrelease/${name}/zip"
-      local dest="${FFMPEG_DIR}/${name}.zip"
-      info "下载 macOS 版 ${name}..."
-      if command -v curl > /dev/null 2>&1; then
+      for name in ffmpeg ffprobe; do
+        local url="https://evermeet.cx/ffmpeg/getrelease/${name}/zip"
+        local dest="${FFMPEG_DIR}/${name}.zip"
+        info "下载 macOS 版 ${name}..."
+        command -v curl > /dev/null 2>&1 || continue
         if curl -sL "${url}" -o "${dest}" 2>/dev/null; then
           unzip -o "${dest}" -d "${FFMPEG_DIR}/bin/" 2>/dev/null
           chmod +x "${FFMPEG_DIR}/bin/${name}"
           rm -f "${dest}"
           info "${name} 安装成功"
-          return 0
         fi
-      fi
+      done
+      return 0
       ;;
 
     Linux)
-      # 静态构建 from johnvansickle.com（包含 ffmpeg ffprobe）
-      local url="https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-64-static.tar.xz"
-      info "下载 Linux 版 ${name} (静态构建)..."
-      if command -v curl > /dev/null 2>&1 && command -v tar > /dev/null 2>&1; then
-        local tarball="${FFMPEG_DIR}/ffmpeg-static.tar.xz"
-        if curl -sL "${url}" -o "${tarball}" 2>/dev/null; then
-          tar -xJf "${tarball}" --wildcards "*/${name}" --strip-components=1 -C "${FFMPEG_DIR}/bin/" 2>/dev/null
-          chmod +x "${FFMPEG_DIR}/bin/${name}"
-          rm -f "${tarball}"
-          info "${name} 安装成功"
-          return 0
-        fi
+      local url="https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz"
+      info "下载 Linux 版 ffmpeg (静态构建)..."
+      command -v curl > /dev/null 2>&1 || { warn "curl 未找到"; return 1; }
+      command -v tar > /dev/null 2>&1 || { warn "tar 未找到"; return 1; }
+
+      if curl -sL "${url}" -o "${tarball}" 2>/dev/null; then
+        rm -rf "${tmp_extract}"
+        mkdir -p "${tmp_extract}"
+        tar -xJf "${tarball}" -C "${tmp_extract}/" 2>/dev/null
+
+        local extracted_dir
+        extracted_dir=$(find "${tmp_extract}" -maxdepth 1 -type d -name "ffmpeg-*" | head -1)
+
+        for name in ffmpeg ffprobe; do
+          if [[ -n "${extracted_dir}" && -f "${extracted_dir}/${name}" ]]; then
+            cp "${extracted_dir}/${name}" "${FFMPEG_DIR}/bin/${name}"
+            chmod +x "${FFMPEG_DIR}/bin/${name}"
+            info "${name} 安装成功"
+          else
+            warn "${name} 未找到，跳过"
+          fi
+        done
+
+        rm -rf "${tmp_extract}"
+        rm -f "${tarball}"
+      else
+        warn "ffmpeg 下载失败"
       fi
+      return 0
       ;;
 
     CYGWIN*|MINGW*|MSYS*|Windows*)
@@ -274,13 +297,10 @@ download_ffmpeg_pkg() {
       warn "Windows 建议手动安装: https://github.com/BtbN/FFmpeg-Builds"
       ;;
   esac
-
-  warn "${name} 下载失败，yt-dlp 仍可尝试使用系统命令"
-  return 1
+  return 0
 }
 
-download_ffmpeg_pkg ffmpeg
-download_ffmpeg_pkg ffprobe
+install_ffmpeg_static
 echo ""
 
 # ──────────────────────────────────────────────
