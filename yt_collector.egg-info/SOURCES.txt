@@ -1,5 +1,6 @@
 README.md
 requirements.txt
+.gitignore
 config.yaml
 config.py
 install.sh
@@ -15,3 +16,8 @@ yt_collector.egg-info/dependency_links.txt
 yt_collector.egg-info/entry_points.txt
 yt_collector.egg-info/requires.txt
 yt_collector.egg-info/top_level.txt
+mise.toml
+web_ui/app.js
+web_ui/index.html
+web_ui/style-light.css
+web_ui/style.css

@@ -1,3 +1,7 @@
 yt-dlp>=2024.1.1
+yt-dlp-ejs>=0.8.0
 pyyaml>=6.0
+torch<2.3.0
+llvmlite<0.44.0
+numba<0.60.0
 openai-whisper>=20231117
