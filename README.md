@@ -1,6 +1,6 @@
 # YouTube 频道文字脚本采集器
 
-跨平台工具，支持 Linux / macOS / Windows。
+跨平台工具，支持 **Linux / macOS / Windows**，已全平台测试通过。
 
 ## 功能
 
@@ -11,6 +11,7 @@
 - 🤖 AI 模式（JSON 输出）
 - 🌐 Web UI 界面
 - 🔍 自动检测已登录 YouTube 的浏览器
+- 🍪 支持手动导入 Cookie 文件（解决浏览器加密问题）
 
 ## 系统依赖
 
@@ -47,6 +48,8 @@ ytdl-webui
 # 浏览器打开 http://localhost:8765
 ```
 
+> ⚠️ 首次使用建议放入 Cookie 文件（见下方 Cookie 说明），否则下载可能失败。
+
 ### 交互式 CLI
 
 ```bash
@@ -58,6 +61,8 @@ ytdl-cli "https://www.youtube.com/watch?v=..."
 ```bash
 ytdl-cli "URL" -q 720p --code-convert --media-type audio
 ```
+
+> ⚠️ URL 中的 `?list=...` 等播放列表参数会被忽略，始终只下载单个视频。
 
 ### AI 模式（JSON 输出）
 
@@ -78,9 +83,51 @@ ytdl-aicli "URL"
 | `--srt`              | 生成 .srt 字幕                                | true           |
 | `--md`               | 生成 .md 文本                                 | true           |
 | `--whisper-model`    | tiny/base/small/medium/large                  | tiny           |
-| `--whisper-language` | ISO 639-1 语言代码                            | zh             |
+| `--whisper-language` | ISO 6391 语言代码                             | zh             |
 | `--separate-audio`   | 分离音频文件                                  | false          |
 | `--audio-format`     | mp3 / wav                                     | mp3            |
+
+## Cookie 说明
+
+### 方式一：浏览器自动检测（默认）
+
+工具自动检测已登录 YouTube 的浏览器，按优先级：
+**Chrome → Firefox → Edge → Brave → Opera → Chromium**
+
+需要浏览器**至少打开过一次 YouTube 并保持登录状态**。
+
+### 方式二：Cookie 文件（推荐）
+
+将 Netscape 格式的 `cookies.txt` 放入 `cookies/` 目录，工具会自动使用：
+
+```
+youtubeChannelScriptCollector/
+└── cookies/
+    └── cookies.txt   ← 放这里
+```
+
+**为什么需要手动导入 Cookie？**
+
+| 平台/浏览器 | 问题 | 解法 |
+|------------|------|------|
+| Windows Edge | Cookie 用 DPAPI 加密，yt-dlp 读不出来 | 导出 cookie 文件 |
+| macOS Chrome 138+ | Cookie 用 Yolo AES-CBC 加密 | EditThisCookie 导出 |
+
+**必须包含的字段**（否则认证失败）：
+
+| 字段 | 说明 |
+|------|------|
+| `HSID` | 用户身份 ID（必须有） |
+| `SSID` | Session ID（必须有） |
+| `APISID` | Google API 安全 cookie（必须有） |
+| `SAPISID` | Google API 安全 cookie（必须有） |
+
+> ⚠️ Chrome DevTools 导出的 cookie 默认缺少以上字段，会导致 "Sign in to confirm you're not a bot" 错误，请使用 **EditThisCookie** 或 **Get cookies.txt LOCALLY** 扩展导出。
+
+**推荐工具**：
+
+- **EditThisCookie**（Chrome/Edge）→ Export → Netscape 格式 ✅
+- **Get cookies.txt LOCALLY**（多浏览器）→ Export → Format: Netscape
 
 ## Whisper 模型
 
@@ -94,20 +141,19 @@ ytdl-aicli "URL"
 
 > 老机器建议用 `tiny` 或 `base`。
 
-## Cookie 说明
-
-工具自动检测已登录 YouTube 的浏览器，按优先级：
-**Chrome → Firefox → Edge → Brave → Opera → Chromium**
-
-需要浏览器**至少打开过一次 YouTube 并保持登录状态**。
-
 ## 常见问题
+
+**Q: 报错 "Sign in to confirm you're not a bot"**
+A: Cookie 无效或缺少 HSID/SSID/APISID/SAPISID。使用 EditThisCookie 导出 Netscape 格式 cookie 文件到 `cookies/cookies.txt`。
 
 **Q: Whisper 转录很慢**
 A: 使用 `--whisper-model tiny`（默认）。
 
 **Q: ffprobe not found**
 A: 确认 `bash install.sh` 已成功完成，`.ffmpeg/bin/` 目录存在。
+
+**Q: URL 带 `list=` 参数时下载了整个播放列表**
+A: 正常现象。`noplaylist` 参数可防止此行为，当前版本已默认开启。
 
 **Q: 再次运行 install.sh 很慢**
 A: 不会。已就绪的 `.venv/`、`.node/`、`.ffmpeg/` 会自动跳过，只检查可用性。
@@ -120,6 +166,9 @@ youtubeChannelScriptCollector/
 ├── .node/                 # Node.js（mise 安装，项目本地）
 │   └── installs/node/22.x.x/bin/node
 ├── .ffmpeg/bin/           # ffmpeg + ffprobe（静态包，项目本地）
+├── cookies/               # Cookie 文件目录（.gitignore，不提交）
+│   └── cookies.txt        # Netscape 格式 cookie 文件
+├── web_ui/                # Web UI 前端资源
 ├── __init__.py
 ├── utils.py               # 工具函数（路径查找、Cookie 检测）
 ├── collector.py           # 核心业务（下载 + 转录）
