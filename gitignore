@@ -1,0 +1,33 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+
+# pip / setuptools 生成（不要提交）
+*.egg-info/
+
+# Project-local toolchains（项目本地携带，不提交）
+.venv/
+.node/
+.ffmpeg/
+
+# Cookie files（不要提交 cookie 文件）
+cookies/cookies.txt
+
+# Downloads output
+downloads/
+
+# User configuration（per-machine overrides）
+config.yaml
+
+# Log files
+*.log
+
+# Temporary files
+*.part
+*.part*
+*.tmp
+temp/
+tmp/
