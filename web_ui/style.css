@@ -48,6 +48,22 @@ select:disabled { opacity: 0.5; cursor: not-allowed; }
 .result.ok { border-left: 3px solid var(--success); }
 .result.fail { border-left: 3px solid var(--danger); }
 .info { font-size: 0.8rem; color: var(--text-muted-dark); margin-top: 0.3rem; }
+.cookie-warn {
+  background: #f59e0b15;
+  border: 1px solid #f59e0b60;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  color: #f59e0b;
+  line-height: 1.5;
+}
+.cookie-warn code {
+  background: #f59e0b20;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.8em;
+}
 .success-badge { display: inline-flex; align-items: center; gap: 0.3rem; background: var(--success-bg); color: var(--success); padding: 0.3rem 0.7rem; border-radius: 20px; font-size: 0.8rem; margin-bottom: 0.5rem; }
 .msgbox-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--overlay-bg); z-index: 1000; align-items: center; justify-content: center; }
 .msgbox-overlay.show { display: flex; }

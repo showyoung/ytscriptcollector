@@ -146,6 +146,14 @@ async function init() {
   const d = await defaultsRes.json();
   const o = await optionsRes.json();
 
+  // cookie 文件缺失警告
+  if (d.cookie_file_missing) {
+    const banner = document.createElement('div');
+    banner.className = 'cookie-warn';
+    banner.innerHTML = '⚠️ <strong>建议：</strong>将 Netscape 格式的 cookies.txt 放入 <code>cookies/</code> 目录，可提升下载成功率。';
+    document.querySelector('.container').insertBefore(banner, document.querySelector('.card'));
+  }
+
   // media_type
   _mediaTypeOptions = o.media_types.map(v => ({ value: v, label: v === 'video' ? '视频' : '音频' }));
   populateSelect('media_type', _mediaTypeOptions, d.media_type);

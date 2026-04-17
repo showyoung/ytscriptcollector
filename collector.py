@@ -28,24 +28,48 @@ from config import resolve_output_dir, defaults as config_defaults, subtitle_lan
 # ============================================================================
 # 内部工具
 # ============================================================================
+# cookie 文件夹缺失警告（只提示一次）
+_cookie_file_warning_printed = False
+
 
 def _build_ydl_opts(url: str, *, cookies_method: str) -> tuple[dict, str]:
     """
     构造 yt-dlp 通用选项，并返回 (opts_dict, js_runtime_path)。
+    自动检测 cookies/cookies.txt 是否存在且可用：
+      - 若存在且可用（yt-dlp 可读），使用 --cookies-file
+      - 否则使用 --cookies-from-browser，并在 stderr 输出提示
     cookies_method 为 "auto" 时自动检测浏览器。
     """
     if cookies_method == "auto":
         cookies_method = detect_youtube_browser() or config_defaults().get("cookies_fallback")
 
     js_runtime = get_js_runtime()
-    return {
+    opts = {
         "quiet": True,
         "no_warnings": True,
         "extract_flat": False,
-        "cookiesfrombrowser": (cookies_method, None),
+        "noplaylist": True,
         "js_runtimes": {"node": {"path": js_runtime}},
         "extractor_args": {"youtube": {"js_runtime": "node"}}
-    }, js_runtime
+    }
+
+    # 自动检测 cookies/cookies.txt
+    cookie_file_path = Path(__file__).parent / "cookies" / "cookies.txt"
+    global _cookie_file_warning_printed
+    if cookie_file_path.exists():
+        opts["cookiefile"] = str(cookie_file_path)
+    else:
+        if not _cookie_file_warning_printed:
+            import sys
+            _cookie_file_warning_printed = True
+            print(
+                "⚠️ cookies/cookies.txt 不存在，建议放入 Netscape 格式的 cookie 文件以获得更好的下载体验。\n"
+                "   将尝试使用浏览器 Cookie...",
+                file=sys.stderr,
+            )
+        opts["cookiesfrombrowser"] = (cookies_method, None)
+
+    return opts, js_runtime
 
 
 def _resolve_audio_only(quality: str, audio_only: bool) -> tuple[str, bool]:

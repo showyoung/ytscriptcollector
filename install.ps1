@@ -13,112 +13,109 @@ $VenvDir = Join-Path $ToolDir ".venv"
 $BinDir = "$env:USERPROFILE\.local\bin"
 $FfmpegDir = Join-Path $ToolDir ".ffmpeg"
 
-function Get-CdpColor {
-    param([string]$Name)
-    if ($Host.Name -eq "ConsoleHost") {
-        $map = @{
-            "GREEN"  = "`e[92m"
-            "YELLOW" = "`e[93m"
-            "RED"    = "`e[91m"
-            "RESET"  = "`e[0m"
-        }
-        return $map[$Name]
-    }
-    return ""
-}
+$GREEN  = if ($Host.Name -eq "ConsoleHost") { "`e[92m" } else { "" }
+$YELLOW = if ($Host.Name -eq "ConsoleHost") { "`e[93m" } else { "" }
+$RED    = if ($Host.Name -eq "ConsoleHost") { "`e[91m" } else { "" }
+$RESET  = if ($Host.Name -eq "ConsoleHost") { "`e[0m" } else { "" }
 
-$GREEN  = Get-CdpColor "GREEN"
-$YELLOW = Get-CdpColor "YELLOW"
-$RED    = Get-CdpColor "RED"
-$RESET  = Get-CdpColor "RESET"
+function Write-Info  { Write-Host "   ${GREEN}OK${RESET} $args" }
+function Write-Warn  { Write-Host "   ${YELLOW}WARN${RESET} $args" }
+function Write-Error { Write-Host "   ${RED}FAIL${RESET} $args" }
 
-function Write-Info  { Write-Host "   ${GREEN}✅${RESET} $args" }
-function Write-Warn  { Write-Host "   ${YELLOW}⚠️${RESET} $args" }
-function Write-Error { Write-Host "   ${RED}❌${RESET} $args" }
-
-# ──────────────────────────────────────────────
+# ------------------------------------------------------------
 # 卸载
-# ──────────────────────────────────────────────
+# ------------------------------------------------------------
 if ($Uninstall) {
-    Write-Host "==================================" -ForegroundColor Cyan
+    Write-Host "=================================="
     Write-Host "YouTube 脚本采集器 - 卸载"
     Write-Host "=================================="
     Write-Host ""
 
     foreach ($name in @("ytdl-cli", "ytdl-aicli", "ytdl-webui")) {
-        $target = Join-Path $BinDir "$name.bat"
-        if (Test-Path $target) {
-            Remove-Item $target -Force
-            Write-Host "  删除: $target"
+        $bat = Join-Path $BinDir "$name.bat"
+        if (Test-Path $bat) {
+            Remove-Item $bat -Force
+            Write-Host "  Delete: $bat"
         }
     }
 
     Write-Host ""
-    Write-Host "  删除项目数据:"
+    Write-Host "  Delete project data:"
+
     if (Test-Path $VenvDir) {
         Remove-Item $VenvDir -Recurse -Force
-        Write-Host "  删除: $VenvDir"
-    }
-    if (Test-Path (Join-Path $ToolDir ".node")) {
-        Remove-Item (Join-Path $ToolDir ".node") -Recurse -Force
-        Write-Host "  删除: (Join-Path $ToolDir ".node")"
-    }
-    if (Test-Path $FfmpegDir) {
-        Remove-Item $FfmpegDir -Recurse -Force
-        Write-Host "  删除: $FfmpegDir"
+        Write-Host "  Delete: $VenvDir"
     }
 
-    Write-Info "命令和数据已删除"
-    Write-Host ""
-    Write-Host "提示: 如需彻底删除工具，请手动删除目录:"
-    Write-Host "  Remove-Item -Recurse '$ToolDir'"
-    Write-Host ""
+    $nodeDir = Join-Path $ToolDir ".node"
+    if (Test-Path $nodeDir) {
+        Remove-Item $nodeDir -Recurse -Force
+        Write-Host "  Delete: $nodeDir"
+    }
+
+    if (Test-Path $FfmpegDir) {
+        Remove-Item $FfmpegDir -Recurse -Force
+        Write-Host "  Delete: $FfmpegDir"
+    }
+
+    Write-Info "Done"
     exit 0
 }
 
-# ──────────────────────────────────────────────
+# ------------------------------------------------------------
 # Banner
-# ──────────────────────────────────────────────
-Write-Host "==================================" -ForegroundColor Cyan
+# ------------------------------------------------------------
+Write-Host "=================================="
 Write-Host "YouTube 脚本采集器 - 安装程序 (Windows)"
 Write-Host "=================================="
 Write-Host ""
-Write-Host "  工具目录: $ToolDir"
-Write-Host "  命令目录: $BinDir"
+Write-Host "  Tool dir: $ToolDir"
+Write-Host "  Bin dir: $BinDir"
 Write-Host ""
 
-# ──────────────────────────────────────────────
-# Step 1: 创建命令目录
-# ──────────────────────────────────────────────
-Write-Host "[1/7] 创建命令目录..."
+# ------------------------------------------------------------
+# Step 1: 创建命令目录 + 设置 PATH
+# ------------------------------------------------------------
+Write-Host "[1/7] Create bin dir & set PATH..."
 New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
-Write-Info "命令目录就绪"
+
+# 把 ~/.local/bin 加入用户 PATH（永久有效）
+$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if ($userPath -notlike "*$BinDir*") {
+    [Environment]::SetEnvironmentVariable("Path", "$userPath;$BinDir", "User")
+    Write-Info "Added $BinDir to user PATH (needs new terminal to take effect)"
+} else {
+    Write-Info "PATH already contains bin dir"
+}
+# 当前 session 也加上（安装完立即可用）
+$env:Path = "$BinDir;$env:Path"
+Write-Info "Done"
 Write-Host ""
 
-# ──────────────────────────────────────────────
+# ------------------------------------------------------------
 # Step 2: 检查工具文件
-# ──────────────────────────────────────────────
-Write-Host "[2/7] 检查工具文件..."
+# ------------------------------------------------------------
+Write-Host "[2/7] Check tool files..."
 foreach ($f in @("cli.py", "collector.py")) {
     $path = Join-Path $ToolDir $f
     if (-not (Test-Path $path)) {
-        Write-Error "未找到: $f"
+        Write-Error "Not found: $f"
         exit 1
     }
 }
-Write-Info "工具文件就绪"
+Write-Info "Done"
 Write-Host ""
 
-# ──────────────────────────────────────────────
+# ------------------------------------------------------------
 # Step 3: 查找系统 Python
-# ──────────────────────────────────────────────
-Write-Host "[3/7] 查找系统 Python..."
+# ------------------------------------------------------------
+Write-Host "[3/7] Find Python..."
 
 $python = $null
 foreach ($cmd in @("python3", "python", "py")) {
     try {
-        $ver = & $cmd --version 2>&1
-        if ($LASTEXITCODE -eq 0 -and $ver -match "Python (\d+)\.(\d+)") {
+        $output = & $cmd --version 2>&1
+        if ($LASTEXITCODE -eq 0 -and $output -match "Python (\d+)\.(\d+)") {
             $python = $cmd
             break
         }
@@ -126,42 +123,42 @@ foreach ($cmd in @("python3", "python", "py")) {
 }
 
 if (-not $python) {
-    Write-Error "未找到 Python3，请先安装 Python >= 3.9"
-    Write-Host "  下载: https://www.python.org/downloads"
+    Write-Error "Python 3.9+ not found. Download: https://www.python.org/downloads"
     exit 1
 }
 
 $ver = & $python --version 2>&1
 if ($ver -match "Python (\d+)\.(\d+)" -and ([int]$Matches[1] -lt 3 -or ([int]$Matches[1] -eq 3 -and [int]$Matches[2] -lt 9))) {
-    Write-Error "Python 版本过低（需要 >= 3.9）: $ver"
+    Write-Error "Python too old (need >= 3.9): $ver"
     exit 1
 }
 
-Write-Info "系统 Python: $ver"
+Write-Info "Found: $ver"
 Write-Host ""
 
-# ──────────────────────────────────────────────
+# ------------------------------------------------------------
 # Step 4: 处理 .venv
-# ──────────────────────────────────────────────
-Write-Host "[4/7] 处理虚拟环境 .venv..."
+# ------------------------------------------------------------
+Write-Host "[4/7] Handle .venv..."
 
 $VenvPython = Join-Path $VenvDir "Scripts\python.exe"
 
 function Test-Venv {
     if (Test-Path $VenvPython) {
         try {
-            $result = & $VenvPython --version 2>&1
+            $null = & $VenvPython --version 2>&1
             if ($LASTEXITCODE -eq 0) { return $true }
         } catch { }
     }
     return $false
 }
 
+$recreate = $false
 if (Test-Path $VenvDir) {
     if (Test-Venv) {
-        Write-Info "虚拟环境已存在且可用: $VenvDir"
+        Write-Info ".venv OK, skip"
     } else {
-        Write-Warn "虚拟环境损坏，删除并重新创建..."
+        Write-Warn ".venv broken, recreate..."
         Remove-Item $VenvDir -Recurse -Force
         $recreate = $true
     }
@@ -170,99 +167,92 @@ if (Test-Path $VenvDir) {
 }
 
 if ($recreate) {
-    Write-Info "创建虚拟环境..."
     try {
         & $python -m venv $VenvDir
         if (-not (Test-Venv)) {
-            Write-Error "虚拟环境创建失败"
+            Write-Error ".venv create failed"
             exit 1
         }
-        Write-Info "虚拟环境创建成功: $VenvDir"
+        Write-Info ".venv created"
     } catch {
-        Write-Error "虚拟环境创建失败: $_"
+        Write-Error ".venv create failed: $_"
         exit 1
     }
 }
 Write-Host ""
 
-# ──────────────────────────────────────────────
+# ------------------------------------------------------------
 # Step 5: 处理 ffmpeg
-# ──────────────────────────────────────────────
-Write-Host "[5/7] 处理 ffmpeg..."
-$ffmpegBin = Join-Path $FfmpegDir "bin"
-New-Item -ItemType Directory -Path $ffmpegBin -Force | Out-Null
+# ------------------------------------------------------------
+Write-Host "[5/7] Handle ffmpeg..."
+$FfmpegBin = Join-Path $FfmpegDir "bin"
+New-Item -ItemType Directory -Path $FfmpegBin -Force | Out-Null
 
 function Test-Binary {
     param([string]$name)
     if (Get-Command $name -ErrorAction SilentlyContinue) { return $true }
-    $path = Join-Path $ffmpegBin $name
+    $path = Join-Path $FfmpegBin "$name.exe"
     if ((Test-Path $path) -and (Get-Item $path).Length -gt 0) { return $true }
     return $false
 }
 
-$ffmpegUrl = "https://github.com/GyanD/codexffmpeg/releases/download/refs/heads/master/ffmpeg-master-latest-win64-gpl.zip"
-$ffprobeUrl = "https://github.com/GyanD/codexffmpeg/releases/download/refs/heads/master/ffprobe-master-latest-win64-gpl.zip"
+# BtbN FFmpeg Builds (GitHub Actions, 包含 ffmpeg + ffprobe)
+$ffmpegZipUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
 
 foreach ($tool in @("ffmpeg", "ffprobe")) {
     if (Test-Binary $tool) {
-        Write-Info "$tool 已安装"
+        Write-Info "$tool OK"
         continue
     }
 
-    Write-Info "下载 $tool..."
-    $zipPath = Join-Path $env:TEMP "$tool.zip"
-    $apiUrl = if ($tool -eq "ffmpeg") { $ffmpegUrl } else { $ffprobeUrl }
+    Write-Info "Download $tool..."
+    $zipPath = Join-Path $env:TEMP "ffmpeg.zip"
 
     try {
-        # 尝试 BtbN GitHub Actions 构建（更小）
-        $ghUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        Invoke-WebRequest -Uri $ghUrl -OutFile $zipPath -UseBasicParsing 2>$null
+        Invoke-WebRequest -Uri $ffmpegZipUrl -OutFile $zipPath -UseBasicParsing
+        Expand-Archive -Path $zipPath -DestinationPath $FfmpegBin -Force
 
-        if ((Test-Path $zipPath) -and (Get-Item $zipPath).Length -gt 0) {
-            Expand-Archive -Path $zipPath -DestinationPath $ffmpegBin -Force
-            # 解压后结构是 ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe
-            Get-ChildItem $ffmpegBin -Recurse -Filter "$tool.exe" | Move-Item -Destination $ffmpegBin -Force
-            Remove-Item $zipPath -Force
-            Write-Info "$tool 安装成功"
-        } else {
-            throw "下载失败"
-        }
+        # BtbN zip 结构: ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe
+        Get-ChildItem $FfmpegBin -Recurse -Filter "$tool.exe" |
+            Move-Item -Destination $FfmpegBin -Force
+
+        Remove-Item $zipPath -Force
+        Write-Info "$tool installed"
     } catch {
-        Write-Warn "$tool 下载失败，whisper 音视频处理可能受影响"
+        Write-Warn "$tool download failed: $_"
     }
 }
 Write-Host ""
 
-# ──────────────────────────────────────────────
+# ------------------------------------------------------------
 # Step 6: 安装 Python 依赖
-# ──────────────────────────────────────────────
-Write-Host "[6/7] 安装 Python 依赖..."
+# ------------------------------------------------------------
+Write-Host "[6/7] Install Python packages..."
 
 $VenvPip = Join-Path $VenvDir "Scripts\pip.exe"
-$VenvPythonExe = $VenvPython
 
-Write-Info "升级 pip..."
-& $VenvPip install --upgrade pip setuptools wheel --quiet 2>$null
+Write-Info "Upgrade pip/setuptools/wheel..."
+& $VenvPip install --upgrade pip setuptools wheel
 
-Write-Info "安装依赖（torch/llvmlite/numba 版本约束避免编译问题）..."
-& $VenvPip install --quiet `
+Write-Info "Install packages..."
+& $VenvPip install `
     "torch<2.3.0" "llvmlite<0.44.0" "numba<0.60.0" `
     "yt-dlp>=2024.1.1" "yt-dlp-ejs>=0.8.0" `
     "pyyaml>=6.0" "openai-whisper>=20231117" `
-    --no-build-isolation 2>$null
+    --no-build-isolation
 
-Write-Info "所有依赖安装完成"
+Write-Info "Done"
 Write-Host ""
 
-# ──────────────────────────────────────────────
+# ------------------------------------------------------------
 # Step 7: 生成 launcher 脚本
-# ──────────────────────────────────────────────
-Write-Host "[7/7] 安装命令..."
+# ------------------------------------------------------------
+Write-Host "[7/7] Install commands..."
 
-$VenvPy = $VenvPythonExe
+$VenvPy = $VenvPython
 
-Write-Info "虚拟环境 Python: $VenvPy"
+Write-Info "venv Python: $VenvPy"
 
 $scripts = @{
     "ytdl-cli"   = "cli.py"
@@ -272,36 +262,30 @@ $scripts = @{
 
 foreach ($name in $scripts.Keys) {
     $batPath = Join-Path $BinDir "$name.bat"
+    $pyScript = $scripts[$name]
 
-    @"
-@echo off
-REM 启用项目本地的 FFmpeg（ffprobe 所在）
-set "PATH=$ffmpegBin;%PATH%"
-"$VenvPy" "$ToolDir\$($scripts[$name])" %*
-"@ | Set-Content -Path $batPath -Encoding UTF8
+    $content = "@echo off`n"
+    $content += "set PATH=$FfmpegBin;%PATH%`n"
+    $content += """$VenvPy"" ""$ToolDir\$pyScript"" %*`n"
 
-    Write-Info "  安装: $batPath"
+    Set-Content -Path $batPath -Value $content -Encoding ASCII
+    Write-Info "  $batPath"
 }
-
 Write-Host ""
 
-# ──────────────────────────────────────────────
+# ------------------------------------------------------------
 # 完成
-# ──────────────────────────────────────────────
-Write-Host "==================================" -ForegroundColor Cyan
-Write-Host "${GREEN}✅ 安装完成!${RESET}"
+# ------------------------------------------------------------
+Write-Host "=================================="
+Write-Host "DONE"
 Write-Host "=================================="
 Write-Host ""
-Write-Host "命令（在任意目录运行）:"
-Write-Host "  ytdl-cli   <URL>   # 交互式 CLI"
-Write-Host "  ytdl-aicli <URL>   # AI 模式"
+Write-Host "Commands (run anywhere):"
+Write-Host "  ytdl-cli   <URL>   # CLI"
+Write-Host "  ytdl-aicli <URL>   # AI mode"
 Write-Host "  ytdl-webui        # Web UI"
 Write-Host ""
-Write-Host "虚拟环境: $VenvDir"
-Write-Host "  • 不依赖系统 Python"
-Write-Host "  • 再次运行 install.ps1 会自动检查并跳过可用环境"
+Write-Host "NOTE: Open a NEW terminal window before using the commands."
 Write-Host ""
-Write-Host "ffprobe: $ffmpegBin\ffprobe.exe"
-Write-Host "  • 用于 whisper 音视频处理"
-Write-Host ""
-Write-Host "卸载: powershell -ExecutionPolicy Bypass -File `"$ToolDir\install.ps1`" -Uninstall"
+Write-Host "Uninstall:"
+Write-Host "  powershell -ExecutionPolicy Bypass -File `"$ToolDir\install.ps1`" -Uninstall"

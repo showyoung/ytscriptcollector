@@ -151,6 +151,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def api_defaults(self):
         """返回默认配置"""
         cfg = config_defaults()
+        cookie_file_path = Path(__file__).parent / "cookies" / "cookies.txt"
         self.send_json({
             "quality":          cfg.get("quality"),
             "whisper_model":    cfg.get("whisper_model"),
@@ -163,6 +164,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             "md":               cfg.get("md"),
             "code_convert":     cfg.get("code_convert"),
             "output_dir":       str(resolve_output_dir(cfg.get("output_dir"))),
+            "cookie_file_missing": not cookie_file_path.exists(),
         })
 
     def api_options(self):
